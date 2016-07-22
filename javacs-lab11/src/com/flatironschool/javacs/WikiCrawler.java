@@ -54,8 +54,24 @@ public class WikiCrawler {
 	 * @throws IOException
 	 */
 	public String crawl(boolean testing) throws IOException {
+		String nextURL = null;
+		if (testing){
+			nextURL = queue.poll(); 
+			Elements paragraphs = wf.readWikipedia(nextURL);
+			index.indexPage(nextURL, paragraphs);
+			queueInternalLinks(paragraphs);
+		} // end testing if
+		else{
+			nextURL = queue.poll(); 
+			// insert check to see if page already in DB and do nothing if it is
+			if (!index.isIndexed(nextURL)){
+				Elements paragraphs = wf.readWikipedia(nextURL);
+				index.indexPage(nextURL, paragraphs);
+				queueInternalLinks(paragraphs);
+			}
+		} // end else
         // FILL THIS IN!
-		return null;
+		return nextURL;
 	}
 	
 	/**
@@ -65,8 +81,26 @@ public class WikiCrawler {
 	 */
 	// NOTE: absence of access level modifier means package-level
 	void queueInternalLinks(Elements paragraphs) {
-        // FILL THIS IN!
+        int numParagraphs = paragraphs.size();
+		// iterate over every paragraph till first link is found
+		//boolean validLinkFound = false;
+		String addressStub = "";
+		for (int p = 0; p < numParagraphs; p++){
+			Element currentPara = paragraphs.get(p);
+			Elements linksInParagraph = currentPara.select("a[href]");
+			if (linksInParagraph.size() > 0){
+					// iterate until we find a "valid" link, aka one that starts with a lowercase letter
+				for (int l = 0; l < linksInParagraph.size(); l++){
+					addressStub = linksInParagraph.get(l).attr("href"); // update to reflect that we found
+					if (addressStub.substring(0, 5).equals("/wiki")){
+						String url = "https://en.wikipedia.org" + addressStub;
+						queue.add(url);
+					} // only add internal links
+				} // end for that finds a valid link, if one exists
+			} // end if that checks if paragraph has any links in it
+		} // end for that traverses each paragraph in page
 	}
+
 
 	public static void main(String[] args) throws IOException {
 		
